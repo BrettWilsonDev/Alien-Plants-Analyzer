@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TensorFlow.js + OpenCV.js Prototype</title>
+
+    <script src="libs/opencv.js" type="text/javascript"></script>
+    <script src="libs/tensorflow.js"></script>
+    <script src="model/mobilenet@2.1.0"></script> <!-- !!!! Replace with custom model !!!! -->
+
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 700px;
+            margin: 2em auto;
+            padding: 1em;
+        }
+
+        #upload {
+            margin-bottom: 1em;
+        }
+
+        #image {
+            display: none;
+        }
+
+        canvas {
+            max-width: 100%;
+            margin: 1em 0;
+            display: block;
+            border: 1px solid #ccc;
+        }
+
+        #tfinfo,
+        #opencvinfo,
+        #results {
+            background: #f2f2f2;
+            padding: 1em;
+            border-radius: 8px;
+            margin-top: 1em;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        ul {
+            padding-left: 1.2em;
+        }
+
+        h3 {
+            margin-top: 0;
+        }
+
+        button {
+            margin-right: 0.5em;
+            margin-top: 1em;
+            padding: 0.5em 1em;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        #filter-buttons {
+            margin-bottom: 1em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>TensorFlow.js + OpenCV.js Prototype</h1>
+
+    <!-- Image upload input -->
+    <input type="file" id="upload" accept="image/*" />
+
+    <!-- Buttons to apply OpenCV filters -->
+    <div id="filter-buttons" style="display:none;">
+        <h3>opencv.js filters</h3>
+        <button data-filter="original">Original Color</button>
+        <button data-filter="gray">Grayscale</button>
+        <button data-filter="blur">Blur</button>
+        <button data-filter="canny">Canny Edge</button>
+    </div>
+
+    <!-- Hidden image element used as OpenCV source -->
+    <img id="image" alt="Uploaded Image Preview" />
+
+    <!-- Canvas where filtered image is shown and classified -->
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <!-- Divs to show results and info -->
+    <div id="results">
+        <h3>Predictions<br>...</h3>
+    </div>
+    <div id="tfinfo">
+        <h3>TensorFlow.js Info</h3>
+        <p>Loading...</p>
+    </div>
+    <div id="opencvinfo">
+        <h3>OpenCV.js Info</h3>
+        <p>Loading...</p>
+    </div>
+
+    <script>
+        // Store original OpenCV Mat from uploaded image (unfiltered)
+        let originalMat = null;
+
+        // Which filter is currently active (default 'gray')
+        let currentFilter = 'original';
+
+        // The TensorFlow.js model instance (MobileNet or custom)
+        let net = null;
+
+        /**
+         * Shows TensorFlow.js environment info and memory usage
+         * @param {string} extraMsg Optional message to append
+         */
+        async function showTFInfo(extraMsg = '') {
+            const tfinfo = document.getElementById('tfinfo');
+
+            // Check if tf is loaded
+            if (typeof tf === 'undefined') {
+                tfinfo.innerHTML = '<h3>TensorFlow.js Info</h3><p style="color:red;">TensorFlow.js not loaded!</p>';
+                return;
+            }
+
+            // Compose info about TF.js version, backend, memory, and environment flags
+            let html = "<h3>TensorFlow.js Info</h3><ul>";
+            html += `<li>Version: ${tf.version.tfjs}</li>`;
+            html += `<li>Selected Backend: ${tf.getBackend()}</li>`;
+            await tf.ready();
+            html += `<li>Backend Ready: ${tf.getBackend()}</li>`;
+
+            // Show current tensor and memory usage info
+            const memory = tf.memory();
+            html += `<li>Memory Usage: ${memory.numTensors} tensors, ${memory.numBytes} bytes</li>`;
+
+            // List environment flags (e.g. WASM, webgl etc)
+            html += "<li>Environment Flags:<ul>";
+            const env = tf.env();
+            for (const flag in env.flags) {
+                html += `<li>${flag}: ${env.get(flag)}</li>`;
+            }
+            html += "</ul></li></ul>";
+
+            if (extraMsg) {
+                html += `<p>${extraMsg}</p>`;
+            }
+            tfinfo.innerHTML = html;
+        }
+
+        /**
+         * Shows OpenCV.js build information once ready
+         */
+        function showOpenCVInfo() {
+            const div = document.getElementById('opencvinfo');
+            if (typeof cv === 'undefined' || !cv.getBuildInformation) {
+                div.innerHTML = '<h3>OpenCV.js Info</h3><p style="color:red;">OpenCV.js not loaded or ready!</p>';
+                return;
+            }
+            div.innerHTML = '<h3>OpenCV.js Info</h3><pre>' + cv.getBuildInformation() + '</pre>';
+        }
+
+        /**
+         * Applies selected OpenCV filter on originalMat and shows result on canvas
+         * @param {string} filter - 'original', 'gray', 'blur', or 'canny'
+         */
+        function applyFilterAndShow(filter) {
+            if (!originalMat) return; // No image loaded yet
+
+            const canvas = document.getElementById('canvas');
+            let dst = new cv.Mat();
+
+            try {
+                switch (filter) {
+                    case 'original':
+                        // Show original RGBA image
+                        cv.imshow(canvas, originalMat);
+                        break;
+
+                    case 'gray':
+                        // Convert RGBA to grayscale and show
+                        cv.cvtColor(originalMat, dst, cv.COLOR_RGBA2GRAY);
+                        cv.imshow(canvas, dst);
+                        break;
+
+                    case 'blur':
+                        // Convert to grayscale then apply Gaussian blur for smoothing
+                        cv.cvtColor(originalMat, dst, cv.COLOR_RGBA2GRAY);
+                        cv.GaussianBlur(dst, dst, new cv.Size(7, 7), 0);
+                        cv.imshow(canvas, dst);
+                        break;
+
+                    case 'canny':
+                        // Convert to grayscale then run Canny edge detector
+                        cv.cvtColor(originalMat, dst, cv.COLOR_RGBA2GRAY);
+                        cv.Canny(dst, dst, 50, 150);
+                        cv.imshow(canvas, dst);
+                        break;
+
+                    default:
+                        cv.imshow(canvas, originalMat);
+                }
+            } catch (e) {
+                console.error('OpenCV filter error:', e);
+                document.getElementById('results').innerHTML = `<p style="color:red;">OpenCV error: ${e.message}</p>`;
+            } finally {
+                dst.delete();
+            }
+
+            // Make sure canvas is visible to user
+            canvas.style.display = 'block';
+        }
+
+        /**
+         * Runs classification on the image inside the canvas using the loaded model
+         * @param {HTMLCanvasElement} canvas
+         */
+        async function classifyCanvas(canvas) {
+            if (!net) {
+                document.getElementById('results').innerHTML = `<p style="color:red;">Model not loaded yet.</p>`;
+                return;
+            }
+            try {
+                // Use the model's classify method on canvas image
+                const results = await net.classify(canvas);
+
+                // Display predictions with probabilities in a list
+                const resultDiv = document.getElementById('results');
+                resultDiv.innerHTML = '<h3>Predictions</h3><ul>' +
+                    results.map(r => `<li>${r.className} — ${(r.probability * 100).toFixed(2)}%</li>`).join('') +
+                    '</ul>';
+
+                // Update TF info with post-prediction memory stats
+                const memory = tf.memory();
+                await showTFInfo(`Post-prediction memory: ${memory.numTensors} tensors, ${memory.numBytes} bytes`);
+            } catch (e) {
+                console.error('Model classification error:', e);
+                document.getElementById('results').innerHTML = `<p style="color:red;">Classification error: ${e.message}</p>`;
+            }
+        }
+
+        /**
+         * Runs filter application and classification flow
+         */
+        async function processAndClassify() {
+            applyFilterAndShow(currentFilter);
+            await classifyCanvas(document.getElementById('canvas'));
+        }
+
+        // Handle image file upload from user
+        document.getElementById('upload').addEventListener('change', (evt) => {
+            const file = evt.target.files[0];
+            if (!file) return;
+
+            const img = document.getElementById('image');
+            img.src = URL.createObjectURL(file);
+            img.style.display = 'none'; // hide the <img> element, we only use it as source
+
+            img.onload = () => {
+                // Delete previous Mat if exists
+                if (originalMat) {
+                    originalMat.delete();
+                    originalMat = null;
+                }
+                try {
+                    // Read image data into OpenCV Mat
+                    originalMat = cv.imread(img);
+
+                    // Show filter buttons once image is loaded
+                    document.getElementById('filter-buttons').style.display = 'block';
+
+                    // Process image with default filter and classify
+                    processAndClassify();
+                } catch (e) {
+                    console.error('OpenCV read error:', e);
+                    document.getElementById('results').innerHTML = `<p style="color:red;">OpenCV read error: ${e.message}</p>`;
+                }
+            };
+
+            img.onerror = () => {
+                document.getElementById('results').innerHTML = `<p style="color:red;">Failed to load image file.</p>`;
+            };
+        });
+
+        // Listen for filter button clicks, then apply filter & classify
+        document.getElementById('filter-buttons').addEventListener('click', async (evt) => {
+            if (evt.target.tagName === 'BUTTON') {
+                currentFilter = evt.target.getAttribute('data-filter');
+                await processAndClassify();
+            }
+        });
+
+        /**
+         * App initialization: set backend, load model, and setup OpenCV info
+         */
+        async function app() {
+            // Use WebGL backend for faster inference
+            await tf.setBackend('webgl');
+            await tf.ready();
+
+            // Show initial TF info
+            await showTFInfo();
+
+            // Load MobileNet pre-trained model (replace this for custom models!)
+            net = await mobilenet.load();
+            console.log("MobileNet model loaded.");
+
+            // Show OpenCV build info when ready
+            if (typeof cv !== 'undefined') {
+                if (cv.getBuildInformation) {
+                    showOpenCVInfo();
+                } else {
+                    cv['onRuntimeInitialized'] = showOpenCVInfo;
+                }
+            }
+        }
+
+        // Start app
+        app();
+
+    </script>
+</body>
+
+</html>
