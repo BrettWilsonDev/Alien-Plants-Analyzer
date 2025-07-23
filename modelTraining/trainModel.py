@@ -1,40 +1,86 @@
-import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.applications import MobileNetV2
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
-from tensorflow.keras.optimizers import Adam
+import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torchvision import models, transforms
+from torchvision.datasets import ImageFolder
+from torch.utils.data import DataLoader
 
+# Define data directories
+train_dir = 'C:/Users/arman/Alien-Plants-Analyzer/processed/train'
+test_dir = 'C:/Users/arman/Alien-Plants-Analyzer/processed/test'
 
-train_dir = '../processed/train'
-test_dir = '../processed/test'
+# Verify directories exist
+if not os.path.exists(train_dir):
+    raise FileNotFoundError(f"Train directory not found: {train_dir}")
+if not os.path.exists(test_dir):
+    raise FileNotFoundError(f"Test directory not found: {test_dir}")
 
-
-# Data generators
-train_gen = ImageDataGenerator(rescale=1./255, horizontal_flip=True, zoom_range=0.2)
-test_gen = ImageDataGenerator(rescale=1./255)
-
-train_data = train_gen.flow_from_directory(train_dir, target_size=(224, 224), class_mode='binary')
-test_data = test_gen.flow_from_directory(test_dir, target_size=(224, 224), class_mode='binary')
-
-# Model
-base_model = MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights='imagenet')
-base_model.trainable = False
-
-model = Sequential([
-    base_model,
-    GlobalAveragePooling2D(),
-    Dense(1, activation='sigmoid')
+# Data transformations
+train_transforms = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomAffine(degrees=0, scale=(0.8, 1.2)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-model.compile(optimizer=Adam(), loss='binary_crossentropy', metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
+test_transforms = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
 
-# Train
-model.fit(train_data, epochs=10, validation_data=test_data)
+# Data loaders
+train_data = ImageFolder(train_dir, transform=train_transforms)
+test_data = ImageFolder(test_dir, transform=test_transforms)
 
-# Evaluate
-loss, acc, precision, recall = model.evaluate(test_data)
-print(f'Accuracy: {acc:.2f}, Precision: {precision:.2f}, Recall: {recall:.2f}')
+train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
+
+# Model
+num_classes = len(train_data.classes)  # Automatically detect number of classes
+model = models.mobilenet_v2(weights='IMAGENET1K_V1')
+for param in model.parameters():
+    param.requires_grad = False
+model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_classes)
+model = model.to('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Loss and optimizer
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.classifier.parameters())
+
+# Training loop
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+num_epochs = 10
+
+for epoch in range(num_epochs):
+    model.train()
+    running_loss = 0.0
+    for images, labels in train_loader:
+        images, labels = images.to(device), labels.to(device)
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+    print(f'Epoch {epoch+1}, Loss: {running_loss/len(train_loader):.4f}')
+
+# Evaluation
+model.eval()
+correct, total = 0, 0
+with torch.no_grad():
+    for images, labels in test_loader:
+        images, labels = images.to(device), labels.to(device)
+        outputs = model(images)
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+accuracy = correct / total
+print(f'Accuracy: {accuracy:.2f}')
 
 # Save model
-model.save('model.h5')
+os.makedirs('C:/Users/arman/Alien-Plants-Analyzer/model/modelTraining', exist_ok=True)
+torch.save(model.state_dict(), 'C:/Users/arman/Alien-Plants-Analyzer/model/modelTraining/model.pth')
