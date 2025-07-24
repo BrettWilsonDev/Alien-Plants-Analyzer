@@ -1,0 +1,56 @@
+body {
+            font-family: sans-serif;
+            max-width: 700px;
+            margin: 2em auto;
+            padding: 1em;
+        }
+
+        #upload {
+            margin-bottom: 1em;
+        }
+
+        #image {
+            display: none;
+        }
+
+        canvas {
+            max-width: 100%;
+            margin: 1em 0;
+            display: block;
+            border: 1px solid #ccc;
+        }
+
+        #tfinfo,
+        #opencvinfo,
+        #results {
+            background: #f2f2f2;
+            padding: 1em;
+            border-radius: 8px;
+            margin-top: 1em;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        ul {
+            padding-left: 1.2em;
+        }
+
+        h3 {
+            margin-top: 0;
+        }
+
+        button {
+            margin-right: 0.5em;
+            margin-top: 1em;
+            padding: 0.5em 1em;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        #filter-buttons {
+            margin-bottom: 1em;
+        }
