@@ -12,17 +12,22 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-# Paths
+# Paths for data, model, logs and plots.
 dataDir = './Alien-Plants-Analyzer/processed_data_NEW'
 log_path = './Alien-Plants-Analyzer/modelTraining/final/trainLog.md'
 model_path = './Alien-Plants-Analyzer/modelTraining/final/model.pth'
 conf_matrix_path = './Alien-Plants-Analyzer/modelTraining/final/confusion_matrix.png'
 plot_path = './Alien-Plants-Analyzer/modelTraining/final/loss_accuracy_plot.png'
 
+# Ensure that the dataset exists.
 if not os.path.exists(dataDir):
     raise FileNotFoundError("processed_data_NEW not found. Expected structure: invasive/, non-invasive/")
 
 # Transforms
+
+# resize images, apply random flips/rotations/colors (data augmentation - 
+# creating new data items with existing data items by introducing variablility), 
+# convert to tensor, normalize.
 trainTransforms = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.RandomHorizontalFlip(),
@@ -33,6 +38,7 @@ trainTransforms = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
+# resize, convert, normalize (no augmentation).
 testTransforms = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -40,16 +46,20 @@ testTransforms = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
-# Load dataset once
+# Load dataset once from folders and expects subfolders to be treated as classes.
+# Detect and ensure the number of classes, invasive and native.
 fullDataset = ImageFolder(dataDir, transform=trainTransforms)
 numClasses = len(fullDataset.classes)
 print(f"Classes: {fullDataset.classes}, Detected: {numClasses}")
 
 # Split dataset into train, val, test
+# Split into 80% train, 20% tes, split train into train and validation. 
+# Stratify ensures that equal class balance existis within splits.
 indices = list(range(len(fullDataset)))
 train_idx, test_idx = train_test_split(indices, test_size=0.2, stratify=[fullDataset.targets[i] for i in indices], random_state=42)
 train_idx, val_idx = train_test_split(train_idx, test_size=0.2, stratify=[fullDataset.targets[i] for i in train_idx], random_state=42)
 
+# Create dataset subsets.
 trainSet = Subset(fullDataset, train_idx)
 valSet = Subset(fullDataset, val_idx)
 testSet = Subset(fullDataset, test_idx)
@@ -59,39 +69,53 @@ valSet.dataset = ImageFolder(dataDir, transform=testTransforms)
 testSet.dataset = ImageFolder(dataDir, transform=testTransforms)
 
 # Weighted sampler for class balance in training
+# Count the amount of samples per class, Assign weights proportional to counts.
+# Ensure balanced batches with WeightedRadomSampler.
 train_targets = [fullDataset.targets[i] for i in train_idx]
 class_counts = Counter(train_targets)
 class_weights = [1.0 / class_counts[label] for label in train_targets]
 sampler = WeightedRandomSampler(class_weights, len(class_weights))
 
-# Dataloaders
+# Dataloaders to provide data in batches of 32
 trainLoader = DataLoader(trainSet, batch_size=32, sampler=sampler)
 valLoader = DataLoader(valSet, batch_size=32, shuffle=False)
 testLoader = DataLoader(testSet, batch_size=32, shuffle=False)
 
-# Device
+# Use GPU if available, otherwise use CPU.
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Model
+# Load the pretrained MobileNetV2 model.
+# Freeze most layers and fine tune the last layers.
 model = models.mobilenet_v2(weights='IMAGENET1K_V1')
 for param in model.features.parameters():
     param.requires_grad = False
 for param in model.features[-3:].parameters():  # fine-tune last layers
     param.requires_grad = True
 model.classifier[1] = nn.Linear(model.classifier[1].in_features, numClasses)
-model = model.to(device)
+model = model.to(device) # Change final layer to output the number of classes
+# and then move the model to GPU or CPU (Device). 
 
 # Loss and optimizer
+# Loss: Function indicates how wrong the model predictions are, compares predicted
+# class with the true label, the bigger the mismatch the bigger the loss, thus the objective
+# is to have the number as small as possible. 
+# Optimizer: Adjust the model's weights to reduce the loss, make small changes when upadating for
+# slower and more stable learning.
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 # Training with Early Stopping
+# Train up to 30 epochs.
+# Stop early if validation accuracy doesn’t improve for 3 epochs.
+# Track loss/accuracy history.
 numEpochs = 30
 patience = 3  # stop if no improvement in 3 epochs
 best_val_acc = 0.0
 epochs_no_improve = 0
 history = {"train_loss": [], "val_loss": [], "val_acc": []}
 
+# Training: forward pass then compute loss then backward pass then upadate the weights.
 for epoch in range(numEpochs):
     model.train()
     running_loss = 0.0
@@ -104,7 +128,7 @@ for epoch in range(numEpochs):
         optimizer.step()
         running_loss += loss.item()
 
-    # Validation
+    # Validation: test on validation set and calculate the accuracy and loss.
     model.eval()
     val_loss, correct, total = 0.0, 0, 0
     with torch.no_grad():
@@ -161,6 +185,8 @@ plt.savefig(plot_path)
 print(f"Training/validation curves saved to: {plot_path}")
 
 # Load best model
+# Switch to evaluation mode.
+# Loop over test set and count correct predictions, build confusion matrix, track tp, fp, fn.
 model.load_state_dict(torch.load(model_path))
 model.eval()
 
