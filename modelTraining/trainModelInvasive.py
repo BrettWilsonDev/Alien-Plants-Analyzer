@@ -52,6 +52,15 @@ fullDataset = ImageFolder(dataDir, transform=trainTransforms)
 numClasses = len(fullDataset.classes)
 print(f"Classes: {fullDataset.classes}, Detected: {numClasses}")
 
+# Ensure correct label order, since ImageFolder sorts classes alphabetically by default.
+# So we need to specify the order, if it is not in the correct order.
+
+class_to_idx_fixed = {'non-invasive': 0, 'invasive': 1}
+fullDataset.class_to_idx = class_to_idx_fixed
+fullDataset.classes = ['non-invasive', 'invasive']
+
+print(f"Classes AFTER REMAP: {fullDataset.classes}, Mapping: {fullDataset.class_to_idx}")
+
 # Split dataset into train, val, test
 # Split into 80% train, 20% tes, split train into train and validation. 
 # Stratify ensures that equal class balance existis within splits.
@@ -238,14 +247,20 @@ with open(log_path, 'w') as f:
     f.write("## Per-Class Metrics\n")
     f.write("| Class | Precision | Recall |\n")
     f.write("|-------|-----------|--------|\n")
-    for idx, class_name in enumerate(fullDataset.classes):
+
+    labels_fixed = ['non-invasive', 'invasive']
+    for idx, class_name in enumerate(labels_fixed):
         f.write(f"| {class_name} | {precisionPerClass[idx]:.2f} | {recallPerClass[idx]:.2f} |\n")
 
 print(f"\nMetrics saved to: {log_path}")
 
 # Save confusion matrix
 plt.figure(figsize=(8, 6))
+
+# Explicitly set class labels in the correct order.
+labels_fixed = ['non-invasive', 'invasive']
 df_cm = pd.DataFrame(conf_matrix.numpy(), index=fullDataset.classes, columns=fullDataset.classes)
+
 sns.heatmap(df_cm, annot=True, fmt='.0f', cmap='Blues')
 plt.title('Confusion Matrix')
 plt.xlabel('Predicted')
