@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pyracantha Detection — Predict</title>
+    <!-- Static assets -->
+    <link rel="stylesheet" href="../css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.0/dist/ort.min.js"></script>
+    <script src="https://unpkg.com/realm-web@2.0.0/dist/bundle.iife.js"></script>
+    <script src="https://docs.opencv.org/4.x/opencv.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- EXIF.js for reading GPS data from images -->
+    <script src="../js/exif.js"></script>
+    <script defer src="../js/predict.js"></script>
+</head>
+
+<body>
+    <header class="container">
+        <img src="../assets/logo.png" alt="logo" class="logo" />
+        <h1>Alien Plant Analyzer — Detection & Mapping</h1>
+        <p class="subtitle">pyracantha detection in the browser</p>
+        <nav class="nav">
+            <a href="../index.html" class="btn">Home</a>
+            <a href="../map/index.html" class="btn">View Map</a>
+            <button id="darkmode-toggle" class="btn btn-ghost emoji">☀️</button>
+        </nav>
+    </header>
+
+    <main class="container grid-two">
+        <section class="card">
+            <h2>Upload & Filters</h2>
+            <div class="upload-section">
+                <label for="upload" class="btn btn-primary">📁 Upload Image</label>
+                <input type="file" id="upload" accept="image/*" style="display:none" />
+                <img id="image" class="uploaded-image"
+                    style="display:none; max-width:100%; margin-top:1rem; border-radius:8px;" alt="Uploaded image" />
+                <canvas id="canvas" class="canvas" style="display:none; max-width:100%; margin-top:1rem;"></canvas>
+            </div>
+            <div id="filter-buttons" class="chip-row" style="display:none; margin-top:1rem;">
+                <button data-filter="original" class="chip">Original</button>
+                <button data-filter="gray" class="chip">Grayscale</button>
+                <button data-filter="blur" class="chip">Blur</button>
+                <button data-filter="canny" class="chip">Canny</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Prediction</h2>
+            <div id="results" class="results">
+                <p>Waiting for image…</p>
+            </div>
+            <div id="location-card" style="display:none; margin-top:1rem;">
+                <h3>Location</h3>
+                <p id="detected-location" class="success" style="display:none;"></p>
+                <label for="location-select">Select Province (if not auto-detected):</label>
+                <select id="location-select">
+                    <option value="">-- Select a Province --</option>
+                    <option value="Eastern Cape">Eastern Cape</option>
+                    <option value="Free State">Free State</option>
+                    <option value="Gauteng">Gauteng</option>
+                    <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                    <option value="Limpopo">Limpopo</option>
+                    <option value="Mpumalanga">Mpumalanga</option>
+                    <option value="Northern Cape">Northern Cape</option>
+                    <option value="North West">North West</option>
+                    <option value="Western Cape">Western Cape</option>
+                </select>
+                <div id="map" class="map" style="height:300px;"></div>
+                <div class="row" style="margin-top:0.75rem;">
+                    <button id="save-detection" class="btn btn-primary">Add to Session</button>
+                    <button id="export-geojson" class="btn">Export GeoJSON</button>
+                </div>
+            </div>
+            <div class="env" hidden>
+                <details>
+                    <summary>ONNX Runtime Info</summary>
+                    <div id="onnxinfo">
+                        <p>Loading…</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>OpenCV.js Info</summary>
+                    <div id="opencvinfo">
+                        <p>Loading…</p>
+                    </div>
+                </details>
+            </div>
+        </section>
+    </main>
+
+    <script src="../js/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pyracantha Detection — Map</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://s3.amazonaws.com/stitch-sdks/js/bundles/4.9.0/stitch.js"></script>
+</head>
+
+<body>
+    <header class="container">
+        <img src="../assets/logo.png" alt="logo" class="logo" />
+        <h1>Alien Plant Analyzer — Detection & Mapping</h1>
+        <p class="subtitle">pyracantha detection in the browser</p>
+        <nav class="nav">
+            <a href="../index.html" class="btn">Home</a>
+            <a href="../predict/index.html" class="btn">Run Prediction</a>
+            <button id="darkmode-toggle" class="btn btn-ghost emoji">☀️</button>
+        </nav>
+    </header>
+    <main class="container">
+        <div id="map" class="map"></div>
+    </main>
+    <script src="../js/app.js"></script>
+    <script src="../js/map.js"></script>
+</body>
+
+</html>

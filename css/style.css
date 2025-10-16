@@ -1,0 +1,273 @@
+:root {
+    --bg: #0b0c0f;
+    --fg: #e8e9ef;
+    --card: #151821;
+    --muted: #9aa3b2;
+    --accent: #46c37b;
+}
+
+:root[data-theme="light"] {
+    --bg: #ffffff;
+    --fg: #213547;
+    --card: #f5f7fb;
+    --muted: #5c6b7a;
+    --accent: #1ea672;
+}
+
+/* Base reset */
+* {
+    box-sizing:
+        border-box;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+}
+
+@media(max-width:900px) {
+    .container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+}
+
+/* Header & Logo */
+/* .logo{ 
+    height:44px; 
+    margin-bottom:1rem; 
+} */
+.logo{ 
+    height:120px; 
+    margin-bottom:1rem; 
+}
+.subtitle {
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+}
+
+.nav {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+/* Buttons */
+.btn {
+    border: 1px solid #2b2e38;
+    padding: .6rem 1rem;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+    text-decoration: none;
+    transition: .2s;
+}
+
+.btn:hover {
+    border-color: #3a3f4d;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #08110c;
+    border-color: transparent;
+}
+
+.btn-ghost {
+    opacity: .85;
+}
+
+#filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+/* Chips / Filters */
+.chip-row {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-top: .5rem;
+}
+
+.chip {
+    border: 1px solid #2b2e38;
+    padding: .35rem .6rem;
+    border-radius: 999px;
+    background: #10131b;
+    color: var(--fg);
+    cursor: pointer;
+    transition: .2s;
+}
+
+.chip:hover {
+    background: #1a1e2b;
+}
+
+/* Cards / Sections */
+.card {
+    background: var(--card);
+    border: 1px solid #212636;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+    margin-bottom: 2rem;
+}
+
+.upload-section,
+#results,
+#location-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 2rem;
+}
+
+/* Canvas */
+.canvas,
+#canvas {
+    width: 100%;
+    max-width: 640px;
+    min-height: 360px;
+    background: #0f1117;
+    border-radius: 12px;
+    border: 1px dashed #2a2e3a;
+    display: block;
+    margin: 0 auto;
+}
+
+.canvas:hover {
+    border-color: var(--accent);
+}
+
+/* Map */
+.map,
+#map {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: 1100px;
+    height: 500px;
+    border-radius: 12px;
+    margin-top: .75rem;
+    border: 1px solid #212636;
+}
+
+/* Prediction results */
+#results {
+    width: 100%;
+    text-align: left;
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: var(--card);
+    border: 1px solid #212636;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .12);
+}
+
+#results h3 {
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+
+#results ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+#results li {
+    margin-bottom: .5rem;
+}
+
+/* Save/export buttons */
+button#save-detection,
+button#export-geojson {
+    padding: .8rem 1.2rem;
+    margin-top: 1rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: .2s;
+}
+
+button#save-detection {
+    background: var(--accent);
+    color: #08110c;
+}
+
+button#save-detection:hover {
+    background: #369b5f;
+}
+
+button#export-geojson {
+    background: #17a2b8;
+    color: #fff;
+    margin-left: .5rem;
+}
+
+button#export-geojson:hover {
+    background: #117a8b;
+}
+
+/* Misc */
+.success {
+    color: #49d38a;
+}
+
+.env summary {
+    cursor: pointer;
+    color: var(--muted);
+}
+
+pre {
+    white-space: pre-wrap;
+    background: #1a1c23;
+    padding: 1rem;
+    border-radius: 12px;
+    color: var(--fg);
+    overflow-x: auto;
+}
+
+.upload-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    /* space between button, image, and canvas */
+    width: 100%;
+}
+
+#image {
+    max-width: 100%;
+    border-radius: 12px;
+    display: block;
+    /* shown by JS after upload */
+}
+
+#canvas {
+    display: none;
+    /* shown by JS after upload */
+    margin: 0 auto;
+}
