@@ -412,9 +412,4 @@ document.addEventListener("DOMContentLoaded", () => {
             imageElement.style.display = 'none';
         });
     });
-
-    // Dark mode toggle
-    document.getElementById('darkmode-toggle')?.addEventListener('click', () => {
-        window.toggleTheme(); // Use toggleTheme from app.js
-    });
 });
