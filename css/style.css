@@ -272,39 +272,12 @@ pre {
     margin: 0 auto;
 }
 
-
-
-
-/* .nav {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  align-items: center;
-} */
-
 .btn {
-  flex: 1;
-  text-align: center;
-  /* padding: 10px 16px; */
-  /* color: white; */
-  /* border: none; */
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 16px;
-  transition: all 0.25s ease;
-  cursor: pointer;
-  /* min-width: 150px; */
+    flex: 1;
+    text-align: center;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 16px;
+    transition: all 0.25s ease;
+    cursor: pointer;
 }
-
-/* .btn:hover {
-  transform: scale(1.05);
-}
-
-.btn-ghost {
-  background-color: transparent;
-}
-
-.btn-ghost:hover {
-  color: white;
-  transform: scale(1.05);
-} */
