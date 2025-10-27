@@ -11,6 +11,7 @@
     <script src="https://docs.opencv.org/4.x/opencv.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://s3.amazonaws.com/stitch-sdks/js/bundles/4.9.0/stitch.js"></script>
     <script src="../js/exif.js"></script>
 </head>
 
@@ -19,10 +20,11 @@
         <img src="../assets/logo.png" alt="logo" class="logo" />
         <h1>Alien Plant Analyzer — Detection & Mapping</h1>
         <p class="subtitle">Pyracantha detection in the browser</p>
-        <nav class="nav">
-            <a href="../" class="btn">Home</a>
-            <a href="../map/" class="btn">View Map</a>
-            <button id="darkmode-toggle" class="btn btn-ghost emoji">☀️</button>
+        <nav class="nav" style="display: flex; gap: 0.5rem;">
+            <a href="../" class="btn" style="flex: 1; text-align: center;">Home</a>
+            <a href="../map/" class="btn" style="flex: 1; text-align: center;">View Map</a>
+            <a href="../predict/" class="btn btn-primary" style="flex: 1; text-align: center;">Run Prediction</a>
+            <button id="darkmode-toggle" class="btn btn-ghost emoji" style="flex: 0 0 auto;">☀️</button>
         </nav>
     </header>
 
