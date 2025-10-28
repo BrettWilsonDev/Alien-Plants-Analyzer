@@ -68,6 +68,7 @@ body {
     gap: .5rem;
     align-items: center;
     margin-bottom: 2rem;
+    width: 600px;
 }
 
 /* Buttons */
@@ -280,4 +281,5 @@ pre {
     font-size: 16px;
     transition: all 0.25s ease;
     cursor: pointer;
+    /* width: 100%; */
 }
